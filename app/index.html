@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Bridge" />
+<meta name="theme-color" content="#ffffff" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icon-180.png" />
+<title>Bridge</title>
+<style>
+  :root{--ink:#18181b;--sub:#6b7280;--faint:#9ca3af;--line:#ececec;--line2:#e4e4e7;--bg:#fff;--soft:#fafafa;--hover:#f4f4f5;--sel:#f0f0f1;
+    --blue:#2563eb;--green:#16a34a;--red:#dc2626;--cc:#cc6b4f;--cx:#111;--gm:#4285f4;--purple:#7c3aed;
+    --safe-top:env(safe-area-inset-top);--safe-bot:env(safe-area-inset-bottom)}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,monospace}
+  #app{height:100%;display:flex;flex-direction:column}
+  .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  /* header */
+  .hdr{padding:calc(var(--safe-top) + 8px) 16px 8px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);background:#fff}
+  .brand{display:flex;align-items:center;gap:9px;font-size:19px;font-weight:700;letter-spacing:-.01em}
+  .pillbtn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line2);border-radius:11px;padding:9px 13px;font-size:13.5px;font-weight:500;background:#fff;color:var(--ink)}
+  .pillbtn.dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+  /* chips */
+  .chips{display:flex;gap:10px;padding:14px 16px 4px;overflow-x:auto;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:none;display:flex;align-items:center;gap:10px;border:1px solid var(--line2);border-radius:14px;padding:11px 14px;min-width:170px;background:#fff}
+  .chip.sel{border-color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .chip .ic{width:34px;height:34px;border-radius:9px;background:var(--soft);border:1px solid var(--line2);display:grid;place-items:center}
+  .chip .nm{font-size:14.5px;font-weight:600;line-height:1.2}
+  .chip .st{font-size:12px;color:var(--sub);display:flex;align-items:center;gap:6px;margin-top:2px}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+  /* context header */
+  .ctxh{padding:18px 16px 10px}
+  .ctxh .row1{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .ctxh .nm{font-size:24px;font-weight:700;letter-spacing:-.02em;display:flex;align-items:center;gap:9px;min-width:0}
+  .ctxh .nm span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ctxh .st{font-size:14px;color:var(--sub);display:flex;align-items:center;gap:6px;font-weight:400}
+  .ctxh .br{margin-top:8px;font-size:13px;color:var(--faint);display:flex;align-items:center;gap:7px}
+  .model{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line2);border-radius:11px;padding:9px 12px;font-size:13.5px}
+  .icbtn{width:40px;height:40px;border:1px solid var(--line2);border-radius:11px;display:grid;place-items:center;background:#fff}
+  /* feed */
+  .msg{display:flex;gap:12px;padding:16px;border-bottom:1px solid var(--line)}
+  .av{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:11px;font-weight:700}
+  .av.you{background:var(--ink);color:#fff}
+  .msg .who{display:flex;align-items:center;gap:8px}
+  .msg .who b{font-size:15px}
+  .msg .who .t{margin-left:auto;font-size:12px;color:var(--faint)}
+  .msg .tx{font-size:15px;line-height:1.5;margin-top:5px;white-space:pre-wrap;word-break:break-word;color:#27272a}
+  .tool{display:flex;align-items:center;gap:9px;font-size:13.5px;margin-top:7px}
+  .tool .mk{flex:none}
+  .tool .mk.ok{color:var(--green)} .tool .mk.no{color:var(--line2)}
+  .tool .vb{color:var(--ink)} .tool .pa{color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mergebtn{display:inline-flex;align-items:center;gap:8px;background:var(--ink);color:#fff;border:none;border-radius:11px;padding:11px 15px;font-size:14px;font-weight:600;margin-top:10px}
+  .submsg{font-size:13px;color:var(--faint);margin-top:8px}
+  /* status line + composer */
+  .modebar{padding:8px 16px 2px;display:flex}
+  .modepill{display:inline-flex;align-items:center;gap:7px;border:none;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:600}
+  .composer{margin:6px 16px calc(var(--safe-bot) + 8px);border:1px solid var(--line2);border-radius:16px;padding:14px 14px 10px;background:#fff}
+  .composer .ph{color:var(--faint);font-size:15px}
+  .composer .bar{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
+  .composer .plus{width:34px;height:34px;border:1px solid var(--line2);border-radius:50%;display:grid;place-items:center;color:var(--sub);font-size:18px}
+  .composer .send{width:40px;height:40px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:18px}
+  #ci{width:100%;border:none;outline:none;font-size:15.5px;background:transparent;font-family:inherit}
+  .promptc{margin:6px 16px calc(var(--safe-bot) + 8px);border:1px solid var(--blue);border-radius:16px;padding:14px;background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.07)}
+  .promptc .ttl{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:5px}
+  .promptc .sub{font-size:13.5px;color:var(--sub);margin-bottom:11px;word-break:break-word;line-height:1.45}
+  .promptc .aq{font-size:14.5px;font-weight:600;margin:6px 0 8px}
+  .promptc .opt{display:block;width:100%;border:1px solid var(--line2);border-radius:12px;padding:12px 13px;font-size:14.5px;text-align:left;background:#fff;margin-bottom:8px}
+  .pa-row{display:flex;gap:10px}
+  .pa-row button{flex:1;border-radius:12px;padding:13px;font-size:14.5px;font-weight:600;border:1px solid var(--line2);background:#fff}
+  .pa-row .allow{background:var(--ink);color:#fff;border-color:var(--ink)}
+  /* tab bar */
+  .tabs{display:flex;border-top:1px solid var(--line);padding:8px 0 calc(var(--safe-bot) + 6px);background:#fff}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint);font-size:11px;font-weight:500;background:none;border:none;padding:4px}
+  .tab.on{color:var(--ink)}
+  /* lists / generic */
+  .lrow{display:flex;align-items:center;gap:12px;padding:15px 16px;border-bottom:1px solid var(--line)}
+  .lrow:active{background:var(--hover)}
+  .lrow .nm{font-size:15px;font-weight:600} .lrow .meta{font-size:12.5px;color:var(--faint)} .lrow .when{margin-left:auto;font-size:11.5px;color:var(--faint)}
+  .empty{text-align:center;color:var(--faint);font-size:14px;padding:48px 20px}
+  .sectit{font-size:12px;letter-spacing:.05em;color:var(--faint);padding:18px 16px 8px;font-weight:600}
+  .card2{margin:8px 16px;border:1px solid var(--line2);border-radius:14px;overflow:hidden}
+  .srow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px}
+  .srow+.srow{border-top:1px solid var(--line)}
+  .btn{background:var(--ink);color:#fff;border:none;border-radius:11px;padding:11px 16px;font-size:14px;font-weight:600}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line2)}
+  .toast{position:fixed;left:50%;bottom:calc(var(--safe-bot) + 86px);transform:translateX(-50%);background:rgba(20,20,24,.94);color:#fff;font-size:13px;padding:10px 16px;border-radius:11px;z-index:99;max-width:80%;text-align:center}
+  /* slash palette */
+  .palette{margin:0 16px}
+  .palette .p{display:flex;align-items:center;gap:10px;border:1px solid var(--line2);border-bottom:none;padding:12px 14px;background:#fff;font-size:14.5px}
+  .palette .p:first-child{border-radius:12px 12px 0 0} .palette .p:last-child{border-radius:0 0 12px 12px;border-bottom:1px solid var(--line2)}
+  .palette .p .c{font-family:ui-monospace,monospace;font-weight:600} .palette .p .d{color:var(--sub);font-size:12.5px;margin-left:auto}
+  /* sheet */
+  .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:80;display:flex;align-items:flex-end}
+  .sheet{background:#fff;width:100%;border-radius:18px 18px 0 0;max-height:80vh;display:flex;flex-direction:column;padding-bottom:calc(var(--safe-bot) + 8px)}
+  .sheet h3{margin:0;padding:18px 18px 8px;font-size:17px}
+  .sheet .sub2{padding:0 18px 8px;font-size:13px;color:var(--sub)}
+  .sheet .list{overflow-y:auto}
+  .sheet .mr{display:flex;align-items:center;gap:12px;padding:14px 18px;border-top:1px solid var(--line)}
+  .sheet .mr .ck{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--line2);display:grid;place-items:center;flex:none}
+  .sheet .mr .ck.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .sheet .act{padding:14px 18px;display:flex;gap:10px}
+  .sheet .act button{flex:1;border-radius:12px;padding:14px;font-size:15px;font-weight:600;border:1px solid var(--line2);background:#fff}
+  .sheet .act .go{background:var(--ink);color:#fff;border-color:var(--ink)} .sheet .act .go:disabled{opacity:.4}
+  .menu-btn{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--faint);font-size:18px;flex:none}
+  /* login */
+  .login{height:100%;display:flex;flex-direction:column;justify-content:center;gap:14px;max-width:360px;margin:0 auto;padding:24px}
+  .logo{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;margin:0 auto;background:linear-gradient(160deg,#1c1e24,#0c0d10);box-shadow:0 10px 30px -10px rgba(20,20,45,.4)}
+  .login h1{font-size:24px;margin:6px 0 0;font-weight:700;letter-spacing:-.02em;text-align:center}
+  .login p{color:var(--sub);font-size:14px;margin:0;text-align:center;line-height:1.45}
+  .seg{display:flex;background:var(--soft);border:1px solid var(--line2);border-radius:11px;padding:3px}
+  .seg button{flex:1;border:none;background:none;border-radius:9px;padding:9px;font-size:13.5px;font-weight:600;color:var(--sub)}
+  .seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .field{display:flex;align-items:center;gap:9px;border:1px solid var(--line2);border-radius:12px;padding:13px 14px;background:#fff}
+  .field:focus-within{border-color:var(--blue)} .field svg{flex:none;color:var(--faint)}
+  input{flex:1;min-width:0;border:none;outline:none;font-size:16px;background:transparent}
+  .lbtn{width:100%;background:var(--ink);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
+  .lbtn:disabled{opacity:.5}
+  .err{color:var(--red);font-size:13px;line-height:1.45;border:1px solid rgba(220,38,38,.3);background:rgba(220,38,38,.06);border-radius:11px;padding:11px 13px}
+  .hint{color:var(--faint);font-size:12px;text-align:center;line-height:1.45}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const URL="https://xjhxftholvlxuvtecdls.supabase.co";
+const ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqaHhmdGhvbHZseHV2dGVjZGxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NjAwMjMsImV4cCI6MjA5NzAzNjAyM30.2KUDAlpvlNofSBIArY1tOr5flnoK9s8hbsry0hCxUpI";
+const sb=createClient(URL,ANON);
+const app=document.getElementById("app");
+const esc=(s)=>(s||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const ago=(iso)=>{ if(!iso)return""; const d=(Date.now()-new Date(iso).getTime())/1000; if(d<60)return"now"; if(d<3600)return Math.floor(d/60)+"m"; if(d<86400)return Math.floor(d/3600)+"h"; return Math.floor(d/86400)+"d"; };
+const M_SVG=`<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M2 17 L8 8 L11 12 L9.5 14 L7.5 14 Z M11 17 L16 8 L22 17 L19 17 L16 12 L14.5 14.5 Z"/></svg>`;
+const ENG={
+  claude:{n:"Claude Code",c:"#cc6b4f",g:`<svg width="20" height="20" viewBox="0 0 24 24"><g stroke="#cc6b4f" stroke-width="2" stroke-linecap="round"><path d="M12 4v16M4 12h16M6 6l12 12M18 6 6 18"/></g></svg>`},
+  codex:{n:"Codex",c:"#111",g:`<svg width="20" height="20" viewBox="0 0 24 24" fill="#111">${[...Array(8)].map((_,i)=>{const a=i/8*6.283;return `<circle cx="${12+7*Math.cos(a)}" cy="${12+7*Math.sin(a)}" r="1.6"/>`}).join("")}</svg>`},
+  gemini:{n:"Gemini",c:"#4285f4",g:`<svg width="20" height="20" viewBox="0 0 24 24" fill="#4285f4"><path d="M12 2c.7 4.9 4.4 8.6 9.3 9.3v1.4C16.4 13.4 12.7 17.1 12 22h-1.4c-.7-4.9-4.4-8.6-9.3-9.3v-1.4C6.2 10.6 9.9 6.9 10.6 2z"/></svg>`}
+};
+const MODELS={opus:"Opus 4.8",sonnet:"Sonnet 4.6",haiku:"Haiku 4.5"};
+const MODELABEL={default:"ask every time",acceptEdits:"auto-accept edits",plan:"plan",bypassPermissions:"bypass"};
+const ICO={shield:`<path d="M8 1.8 13 3.5v4.2c0 3.3-2.3 5.4-5 6.5-2.7-1.1-5-3.2-5-6.5V3.5z"/>`,check:`<circle cx="8" cy="8" r="6.3"/><path d="M5.4 8.2 7 9.8l3.6-4.1"/>`,clip:`<rect x="4.3" y="3" width="7.4" height="11" rx="1.5"/><path d="M6.3 3V2.1h3.4V3"/>`,bolt:`<path d="M9 1.5 3.6 9H7.5l-.8 5.4L12.4 7H8.2z"/>`};
+const ic=(d,c)=>`<svg width="14" height="14" viewBox="0 0 16 16" fill="${d==="bolt"?c:"none"}" stroke="${c}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">${ICO[d]}</svg>`;
+const MODE_META={
+  default:{label:"Ask every time",short:"Ask",icon:"shield",color:"#6b7280",desc:"Prompts before any edit or command."},
+  acceptEdits:{label:"Auto-accept edits",short:"Auto-accept",icon:"check",color:"#16a34a",desc:"Edits apply automatically. Risky actions still ask."},
+  plan:{label:"Plan first",short:"Plan",icon:"clip",color:"#2563eb",desc:"Proposes a plan and waits for approval."},
+  bypassPermissions:{label:"Bypass permissions",short:"Bypass",icon:"bolt",color:"#c2710c",desc:"Everything runs without asking. Use with care."},
+};
+const STATUS=(r)=>{ if(r.busy) return {t:"Running",c:"var(--blue)"}; if((r.status||"").toLowerCase().includes("review")) return {t:"Review",c:"var(--purple)"}; if(r.status==="Completed") return {t:"Done",c:"var(--green)"}; return {t:"Idle",c:"var(--faint)"}; };
+const chipIcon=(r)=> ENG[r.agent]?.g || ENG.claude.g;
+
+let S={view:"login",tab:"chat",ctxId:null,contexts:[],messages:[],email:"",chans:[],macModel:"sonnet",macMode:"default"};
+let ctrl=null, pending={}, ackOk=false, ctrlReady=false;   // pending[promptId] = {id, contextId, tool, input}
+function sendCmd(p){ try{ ctrl?.send({type:"broadcast",event:"cmd",payload:p}); }catch{} }
+function sendCmdAck(p, label){
+  if(!ctrlReady){ toast("Connecting… try again in a second."); return; }
+  ackOk=false; sendCmd(p);
+  setTimeout(()=>{ if(!ackOk) toast("Your Mac didn't respond. Open Bridge on the Mac, update it to the latest, and turn Relay on."); }, 5000);
+  if(label) toast(label);
+}
+function joinControl(userId){
+  if(ctrl){ try{sb.removeChannel(ctrl);}catch{} }
+  ctrl=sb.channel(`relay-${userId}`,{config:{broadcast:{self:false}}});
+  ctrl.on("broadcast",{event:"prompt"},({payload})=>{ pending[payload.id]=payload; if(S.tab==="chat"&&payload.contextId===S.ctxId) render(); });
+  ctrl.on("broadcast",{event:"prompt_clear"},({payload})=>{ delete pending[payload.id]; if(S.tab==="chat"&&payload.contextId===S.ctxId) render(); });
+  ctrl.on("broadcast",{event:"ack"},()=>{ ackOk=true; });
+  ctrl.on("broadcast",{event:"sessions"},({payload})=>{ openResumeSheet(payload&&payload.list); });
+  ctrl.on("broadcast",{event:"selected"},async({payload})=>{ if(!payload||!payload.contextId) return; if(payload.model)S.macModel=payload.model; if(payload.mode)S.macMode=payload.mode; S.ctxId=payload.contextId;
+    if(!S.contexts.find(c=>c.id===S.ctxId)){ const {data}=await sb.from("contexts").select("*").order("updated_at",{ascending:false}); S.contexts=data||[]; }
+    if(S.tab==="chat") loadMessages(); });
+  ctrl.subscribe((st)=>{ ctrlReady=(st==="SUBSCRIBED"); if(st==="SUBSCRIBED") sendCmd_sync(); });
+}
+function sendCmd_sync(){ try{ ctrl?.send({type:"broadcast",event:"sync",payload:{}}); }catch{} }
+function clearChans(){ S.chans.forEach(c=>sb.removeChannel(c)); S.chans=[]; }
+function toast(t){ const e=document.createElement("div"); e.className="toast"; e.textContent=t; document.body.appendChild(e); setTimeout(()=>e.remove(),2200); }
+const readonly=()=>toast("Read-only for now — control from your phone is coming next.");
+
+async function boot(){
+  const {data}=await sb.auth.getSession();
+  if(data.session){ S.email=data.session.user.email||""; enter(); } else showLogin();
+}
+sb.auth.onAuthStateChange((_e,s)=>{ if(!s){ clearChans(); showLogin(); } });
+
+/* ---------- login ---------- */
+let loginMode="in";
+function friendly(m){ m=(m||"").toLowerCase();
+  if(m.includes("rate limit")||m.includes("over_email_send")) return "Confirmation emails are rate-limited. On the Mac's Supabase project, turn OFF “Confirm email” (Authentication → Email), then try again.";
+  if(m.includes("not confirmed")) return "That account isn't confirmed. Turn off “Confirm email” in Supabase, or confirm the user under Authentication → Users.";
+  if(m.includes("invalid login")) return "Wrong email or password."; return m; }
+function showLogin(err){
+  clearChans(); S.view="login"; const up=loginMode==="up";
+  app.innerHTML=`<div class="login"><div class="logo">${M_SVG.replace('width="22" height="22"','width="30" height="30"').replace(/currentColor/g,'#fff')}</div>
+    <h1>Bridge</h1><p>${up?"Create an account, then sign in on your Mac with the same one.":"Sign in with the same account as your Mac to watch your chats live."}</p>
+    <div class="seg"><button id="mi" class="${up?"":"on"}">Sign in</button><button id="mu" class="${up?"on":""}">Create account</button></div>
+    <div class="field"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3.5" width="12" height="9" rx="1.5"/><path d="M2.5 4.5 8 8.5l5.5-4"/></svg><input id="em" type="email" inputmode="email" placeholder="you@email.com" autocapitalize="off" autocorrect="off"/></div>
+    <div class="field"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3.5" y="7" width="9" height="6" rx="1.3"/><path d="M5.5 7V5.2a2.5 2.5 0 0 1 5 0V7"/></svg><input id="pw" type="password" placeholder="password"/></div>
+    <button class="lbtn" id="go">${up?"Create account":"Sign in"}</button>
+    ${err?`<div class="err">${esc(err)}</div>`:(up?`<div class="hint">First time? Turn off “Confirm email” in Supabase so sign-up works without an email.</div>`:"")}</div>`;
+  mi.onclick=()=>{loginMode="in";showLogin();}; mu.onclick=()=>{loginMode="up";showLogin();};
+  const submit=async()=>{ go.disabled=true; const email=em.value.trim(),password=pw.value; if(!email||!password){go.disabled=false;return;}
+    const {data,error}=up?await sb.auth.signUp({email,password}):await sb.auth.signInWithPassword({email,password}); go.disabled=false;
+    if(error) showLogin(friendly(error.message));
+    else if(up&&!data.session) showLogin("Account created, but email confirmation is on. Turn it off in Supabase, then sign in.");
+    else { S.email=email; enter(); } };
+  go.onclick=submit; pw.addEventListener("keydown",e=>{if(e.key==="Enter")submit();});
+}
+
+/* ---------- app shell ---------- */
+async function enter(){
+  S.view="app";
+  const { data: sess } = await sb.auth.getUser(); if(sess?.user?.id) joinControl(sess.user.id);
+  const {data}=await sb.from("contexts").select("*").order("updated_at",{ascending:false});
+  S.contexts=(data||[]);
+  if(!S.ctxId && S.contexts[0]) S.ctxId=S.contexts[0].id;
+  if(S.ctxId) await loadMessages(); else render();
+  clearChans();
+  S.chans.push(sb.channel("c").on("postgres_changes",{event:"*",schema:"public",table:"contexts"},async()=>{
+    const {data}=await sb.from("contexts").select("*").order("updated_at",{ascending:false}); S.contexts=(data||[]);
+    if(!S.ctxId && S.contexts[0]) S.ctxId=S.contexts[0].id; if(S.tab==="chat"||S.tab==="contexts"||S.tab==="activity") render();
+  }).subscribe());
+  S.chans.push(sb.channel("m").on("postgres_changes",{event:"*",schema:"public",table:"messages"},async(p)=>{
+    if(S.tab==="chat" && p.new && p.new.context_id===S.ctxId) loadMessages(true);
+    else if(S.tab==="activity") render();
+  }).subscribe());
+}
+function tabbar(){ const t=(id,label,svg)=>`<button class="tab ${S.tab===id?"on":""}" data-tab="${id}">${svg}<span>${label}</span></button>`;
+  return `<div class="tabs">
+    ${t("chat","Chat",`<svg width="22" height="22" viewBox="0 0 24 24" fill="${S.tab==="chat"?"var(--ink)":"none"}" stroke="${S.tab==="chat"?"var(--ink)":"var(--faint)"}" stroke-width="1.6"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-4 3v-3H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></svg>`)}
+    ${t("contexts","Contexts",`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>`)}
+    ${t("activity","Activity",`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg>`)}
+    ${t("settings","Settings",`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></svg>`)}
+  </div>`; }
+function bind(){ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{ S.tab=b.dataset.tab; if(S.tab==="chat"&&S.ctxId) loadMessages(); else render(); }); }
+
+function render(){
+  let body="";
+  if(S.tab==="chat") body=chatView();
+  else if(S.tab==="contexts") body=contextsView();
+  else if(S.tab==="activity") body=activityView();
+  else body=settingsView();
+  app.innerHTML=`${body}${tabbar()}`;
+  bind();
+  if(S.tab==="chat"){ chatBind(); const sc=document.getElementById("feed"); if(sc) sc.scrollTop=sc.scrollHeight; }
+  if(S.tab==="contexts") contextsBind();
+  if(S.tab==="activity") document.querySelectorAll("[data-open]").forEach(e=>e.onclick=()=>{S.ctxId=e.dataset.open;S.tab="chat";loadMessages();});
+  if(S.tab==="settings") settingsBind();
+}
+
+/* ---------- chat tab ---------- */
+function chatView(){
+  const cur=S.contexts.find(c=>c.id===S.ctxId);
+  const chips=S.contexts.map(r=>{const st=STATUS(r);return `<div class="chip ${r.id===S.ctxId?"sel":""}" data-chip="${r.id}">
+    <span class="ic">${chipIcon(r)}</span><div><div class="nm">${esc(r.name||"context")}</div><div class="st">${r.temporary?`<span style="color:var(--purple)">Merged</span><span class="dot" style="background:var(--purple)"></span>`:`${st.t}<span class="dot" style="background:${st.c}"></span>`}</div></div></div>`;}).join("");
+  let header="",feed="",status="",composer="";
+  if(cur){ const st=STATUS(cur); const e=ENG[cur.agent]||ENG.claude;
+    const mlabel = cur.agent==="claude" ? (MODELS[S.macModel]||"Sonnet 4.6") : e.n.split(" ")[0];
+    header=`<div class="ctxh"><div class="row1"><div class="nm" style="flex:1;min-width:0"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(cur.name||"context")}</span><span class="st" style="flex:none"><span class="dot" style="background:${st.c}"></span>${st.t}</span></div>
+      <div style="display:flex;gap:8px;flex:none"><span class="model" id="modelbtn" style="max-width:150px">${e.g.replace(/width="20" height="20"/,'width="14" height="14"')} <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${mlabel}</span> ▾</span><span class="icbtn" id="ctxmenu">···</span></div></div>
+      <div class="br mono">${esc(cur.branch||"")}</div></div>`;
+    feed=`<div class="scroll" id="feed">${S.messages.map(msgHtml).join("")||`<div class="empty">No messages yet.</div>`}</div>`;
+    const mm=MODE_META[S.macMode]||MODE_META.default;
+    status=`<div class="modebar"><button class="modepill" id="modepill" style="color:${mm.color};background:${mm.color}1f">${ic(mm.icon,mm.color)} ${mm.label} ▾</button></div>`;
+    const pr = Object.values(pending).find(p=>p.contextId===S.ctxId);
+    composer = pr ? promptCard(pr) :
+      `<div class="composer" id="composer"><input id="ci" placeholder="Ask Bridge, or type a command…" autocapitalize="sentences" /><div class="bar"><span class="plus" id="plus">+</span>${cur.busy?`<span class="send" id="send" style="background:var(--red)">■</span>`:`<span class="send" id="send">↑</span>`}</div></div>`;
+  } else { feed=`<div class="scroll"><div class="empty">No contexts yet. Open Bridge on your Mac and enable Relay.</div></div>`; }
+  const mergeSvg=`<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="4.5" cy="4" r="1.6"/><circle cx="4.5" cy="12" r="1.6"/><path d="M4.5 5.6v4.8M11.5 6v6"/><circle cx="11.5" cy="4" r="1.6"/><path d="M10.2 5.3 6 9"/></svg>`;
+  return `<div class="hdr"><div class="brand">${M_SVG} Bridge</div><div style="display:flex;gap:8px;align-items:center">
+    <span class="pillbtn" id="newchat" style="padding:9px 11px"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3.5v9M3.5 8h9"/></svg></span>
+    <span class="pillbtn" id="merge">${mergeSvg} Merge contexts</span></div></div>
+    <div class="chips">${chips||""}</div>${header}${feed}${status}<div id="palette" class="palette"></div>${composer}`;
+}
+function msgHtml(m){
+  const you=m.role==="you", bridge=m.role==="bridge";
+  const av = you?`<div class="av you">${esc((S.email||"me").slice(0,2).toUpperCase())}</div>`
+    : bridge?`<div class="av" style="color:var(--ink)">${M_SVG.replace(/width="22" height="22"/,'width="22" height="22"')}</div>`
+    : `<div class="av">${(ENG[m.cli]||ENG.claude).g}</div>`;
+  const who = you?"You":(bridge?"Bridge":(ENG[m.cli]||ENG.claude).n);
+  const tools=(m.tools||[]).map(t=>`<div class="tool"><span class="mk ${t.done?"ok":"no"}">${t.done?`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8.5 6.5 12l7-8"/></svg>`:`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6"/></svg>`}</span><span class="vb mono">${esc(verb(t.name))}</span> <span class="pa mono">${esc((t.rawInput||"").replace(/^\{.*?"(?:command|file_path|path|pattern)":"/,"").slice(0,60))}</span></div>`).join("");
+  let extra="";
+  if(bridge && /merge/i.test(m.text||"")) extra=`<button class="mergebtn" id="bmerge"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.5"><circle cx="4.5" cy="4" r="1.6"/><circle cx="4.5" cy="12" r="1.6"/><path d="M4.5 5.6v4.8M11.5 6v6"/><circle cx="11.5" cy="4" r="1.6"/><path d="M10.2 5.3 6 9"/></svg> Merge contexts</button><div class="submsg">This won't affect any workspace or branch.</div>`;
+  const body=m.text?`<div class="tx" style="${m.error?"color:var(--red)":""}">${esc(m.text)}</div>`:(!you&&!tools?`<div class="tx" style="color:var(--faint)">working…</div>`:"");
+  return `<div class="msg">${av}<div style="flex:1;min-width:0"><div class="who"><b>${esc(who)}</b><span class="t">${esc(m.ts||"")}</span></div>${tools}${body}${extra}</div></div>`;
+}
+function verb(n){return ({Read:"Read",Edit:"Update",Write:"Update",Bash:"Run",Grep:"Search",Glob:"Search",WebFetch:"Fetch",Task:"Task",TodoWrite:"Plan"})[n]||n||"";}
+async function loadMessages(silent){
+  if(!S.ctxId) return render();
+  const {data}=await sb.from("messages").select("*").eq("context_id",S.ctxId).order("seq",{ascending:true});
+  S.messages=data||[];
+  if(silent && S.tab==="chat"){ const f=document.getElementById("feed"); if(f){ const near=f.scrollHeight-f.scrollTop-f.clientHeight<120; f.innerHTML=S.messages.map(msgHtml).join(""); chatBind(); if(near)f.scrollTop=f.scrollHeight; return; } }
+  render();
+}
+let pAns={};
+function promptCard(pr){
+  if(pr.tool==="AskUserQuestion"){
+    const qs=(pr.input&&pr.input.questions)||[];
+    return `<div class="promptc"><div class="ttl">${M_SVG.replace(/22/g,"16")} Bridge needs your input</div>`+
+      qs.map((q,qi)=>`<div class="aq">${esc(q.question||q.header||"")}</div>`+
+        (q.options||[]).map((o,oi)=>`<button class="opt" data-aq="${qi}" data-oi="${oi}"><b>${esc(o.label)}</b>${o.description?`<div style="font-size:12.5px;color:var(--sub);font-weight:400;margin-top:2px">${esc(o.description)}</div>`:""}</button>`).join("")).join("")+
+      `</div>`;
+  }
+  const what={Bash:"run a command",Edit:"edit a file",Write:"write a file",Read:"read a file"}[pr.tool]||("use "+(pr.tool||"a tool"));
+  const detail=esc(((pr.input&&(pr.input.command||pr.input.file_path||pr.input.reason))||"").toString().slice(0,160));
+  return `<div class="promptc"><div class="ttl">⚠︎ Approve action</div><div class="sub">The agent wants to ${esc(what)}.${detail?`<br/><span class="mono">${detail}</span>`:""}</div>
+    <div class="pa-row"><button class="allow" data-allow="1">Allow</button><button data-deny="1">Deny</button></div></div>`;
+}
+const SLASH=[{c:"/new",d:"New chat"},{c:"/clear",d:"Clear this chat"},{c:"/rename",d:"Rename",arg:1},{c:"/model",d:"opus|sonnet|haiku",arg:1},{c:"/compact",d:"Compact (Codex)"},{c:"/review",d:"Review changes (Codex)"},{c:"/init",d:"Generate AGENTS.md (Codex)"},{c:"/help",d:"List commands"}];
+function openMergeSheet(){
+  let sel=new Set();
+  const bg=document.createElement("div"); bg.className="sheet-bg";
+  const draw=()=>{ bg.innerHTML=`<div class="sheet"><h3>Merge contexts</h3><div class="sub2">Pick 2+ chats to combine into a temporary review chat. Originals stay untouched.</div>
+    <div class="list">${S.contexts.filter(c=>!c.temporary).map(r=>`<div class="mr" data-id="${r.id}"><span class="ck ${sel.has(r.id)?"on":""}">${sel.has(r.id)?"✓":""}</span><span style="width:22px;display:grid;place-items:center">${chipIcon(r)}</span><div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:600">${esc(r.name||"context")}</div><div class="mono" style="font-size:12px;color:var(--faint)">${esc(r.branch||"")}</div></div></div>`).join("")}</div>
+    <div class="act"><button id="mc">Cancel</button><button class="go" id="mgo" ${sel.size<2?"disabled":""}>Merge ${sel.size||""}</button></div></div>`;
+    bg.querySelectorAll("[data-id]").forEach(e=>e.onclick=()=>{ const id=e.dataset.id; sel.has(id)?sel.delete(id):sel.add(id); draw(); });
+    bg.querySelector("#mc").onclick=()=>bg.remove();
+    const go=bg.querySelector("#mgo"); go.onclick=()=>{ if(sel.size<2)return; sendCmdAck({kind:"merge",ids:[...sel]},"Merging on your Mac…"); bg.remove(); };
+  };
+  draw(); bg.onclick=(e)=>{ if(e.target===bg) bg.remove(); }; document.body.appendChild(bg);
+}
+function sheet(title, sub, rowsHtml, bindRows){
+  const bg=document.createElement("div"); bg.className="sheet-bg";
+  bg.innerHTML=`<div class="sheet"><h3>${esc(title)}</h3>${sub?`<div class="sub2">${esc(sub)}</div>`:""}<div class="list">${rowsHtml}</div><div class="act"><button id="shc">Close</button></div></div>`;
+  bg.querySelector("#shc").onclick=()=>bg.remove(); bg.onclick=(e)=>{ if(e.target===bg) bg.remove(); };
+  document.body.appendChild(bg); if(bindRows) bindRows(bg); return bg;
+}
+function openEngineSheet(){
+  const cur=S.contexts.find(c=>c.id===S.ctxId); const ag=(cur&&cur.agent)||"claude";
+  const eng=[["claude","Claude Code"],["codex","Codex"],["gemini","Gemini"]].map(([v,l])=>`<div class="mr" data-eng="${v}"><span style="width:22px;display:grid;place-items:center">${ENG[v].g}</span><span style="flex:1;font-size:15px;font-weight:600">${l}</span>${ag===v?'<span style="color:var(--green);font-weight:700">✓</span>':''}</div>`).join("");
+  const model = ag==="claude" ? `<div class="sub2" style="padding:14px 18px 4px;font-weight:600">MODEL</div>`+[["opus","Opus 4.8"],["sonnet","Sonnet 4.6"],["haiku","Haiku 4.5"]].map(([v,l])=>`<div class="mr" data-model="${v}"><span style="flex:1;font-size:15px">${l}</span>${S.macModel===v?'<span style="color:var(--green);font-weight:700">✓</span>':''}</div>`).join("") : "";
+  sheet("Engine & model", "Switching engine opens a new chat under it (a merge carries this one across).", `<div class="sub2" style="padding:14px 18px 4px;font-weight:600">ENGINE</div>`+eng+model, (bg)=>{
+    bg.querySelectorAll("[data-eng]").forEach(e=>e.onclick=()=>{ if(e.dataset.eng!==ag) sendCmdAck({kind:"switchEngine",contextId:S.ctxId,agent:e.dataset.eng},"Switching engine…"); bg.remove(); });
+    bg.querySelectorAll("[data-model]").forEach(e=>e.onclick=()=>{ sendCmdAck({kind:"model",contextId:S.ctxId,value:e.dataset.model},"Switching model…"); bg.remove(); });
+  });
+}
+function openCtxMenu(){
+  const cur=S.contexts.find(c=>c.id===S.ctxId); if(!cur) return;
+  const item=(label,danger)=>`<div class="mr" data-act="${label}"><span style="flex:1;font-size:15px${danger?";color:var(--red)":""}">${label}</span></div>`;
+  sheet(cur.name||"Chat", null, item("Resume a session")+item("Rename")+item("Clear chat")+item("Delete chat",true), (bg)=>{
+    bg.querySelectorAll("[data-act]").forEach(e=>e.onclick=()=>{ const a=e.dataset.act; bg.remove();
+      if(a==="Resume a session"){ sendCmd({kind:"listSessions"}); toast("Loading sessions…"); }
+      else if(a==="Rename"){ const n=prompt("Rename chat", cur.name||""); if(n&&n.trim()) sendCmdAck({kind:"rename",contextId:cur.id,name:n.trim()},"Renaming…"); }
+      else if(a==="Clear chat"){ if(confirm("Clear this chat's history?")) sendCmdAck({kind:"send",contextId:cur.id,text:"/clear"},"Clearing…"); }
+      else if(a==="Delete chat"){ if(confirm("Delete this chat?")) sendCmdAck({kind:"delete",contextId:cur.id},"Deleting…"); }
+    });
+  });
+}
+function openResumeSheet(list){
+  if(!list||!list.length){ toast("No past sessions found on your Mac."); return; }
+  const ENGN={claude:"Claude",codex:"Codex",gemini:"Gemini"};
+  const rows=list.map((s,i)=>`<div class="mr" data-i="${i}"><span style="width:22px;display:grid;place-items:center">${(ENG[s.agent]||ENG.claude).g}</span><div style="flex:1;min-width:0"><div style="font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.summary||"(untitled)")}</div><div class="mono" style="font-size:11.5px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ENGN[s.agent]||"")} · ${esc(s.cwd||"")} · ${s.count} msg</div></div></div>`).join("");
+  sheet("Resume a session", "Continue a past session on your Mac.", rows, (bg)=>{ bg.querySelectorAll("[data-i]").forEach(e=>e.onclick=()=>{ sendCmdAck({kind:"resume",info:list[+e.dataset.i]},"Resuming on your Mac…"); bg.remove(); }); });
+}
+function openModeSheet(){
+  const rows=["default","acceptEdits","plan","bypassPermissions"].map(k=>{const m=MODE_META[k];return `<div class="mr" data-mode="${k}"><span style="width:26px;display:grid;place-items:center">${ic(m.icon,m.color)}</span><div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:600">${m.label}</div><div style="font-size:12.5px;color:var(--sub)">${m.desc}</div></div>${S.macMode===k?'<span style="color:var(--green);font-weight:700">✓</span>':''}</div>`;}).join("");
+  sheet("Permission mode","How much the agent can do without asking. Applies on your Mac.",rows,(bg)=>{ bg.querySelectorAll("[data-mode]").forEach(e=>e.onclick=()=>{ sendCmdAck({kind:"mode",contextId:S.ctxId,value:e.dataset.mode},"Changing mode…"); bg.remove(); }); });
+}
+function chatBind(){
+  document.querySelectorAll("[data-chip]").forEach(c=>c.onclick=()=>{S.ctxId=c.dataset.chip;loadMessages();sendCmd({kind:"select",contextId:c.dataset.chip});});
+  const md=document.getElementById("modepill"); if(md) md.onclick=openModeSheet;
+  const mb=document.getElementById("modelbtn"); if(mb) mb.onclick=openEngineSheet;
+  const cm=document.getElementById("ctxmenu"); if(cm) cm.onclick=openCtxMenu;
+  const nc=document.getElementById("newchat"); if(nc) nc.onclick=()=>sendCmdAck({kind:"newContext"},"Creating a new chat…");
+  const mg=document.getElementById("merge"); if(mg) mg.onclick=openMergeSheet;
+  const bm=document.getElementById("bmerge"); if(bm) bm.onclick=openMergeSheet;
+  const cur=S.contexts.find(c=>c.id===S.ctxId);
+  const send=document.getElementById("send"), ci=document.getElementById("ci"), plus=document.getElementById("plus");
+  if(plus) plus.onclick=()=>ci&&ci.focus();
+  if(send) send.onclick=()=>{
+    if(cur&&cur.busy){ sendCmdAck({kind:"stop",contextId:S.ctxId}); return; }
+    const t=(ci&&ci.value||"").trim(); if(!t) return; sendCmdAck({kind:"send",contextId:S.ctxId,text:t},"Sent to your Mac…"); if(ci) ci.value="";
+  };
+  if(ci) ci.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); send&&send.click(); } });
+  const pal=document.getElementById("palette");
+  const drawPal=()=>{ if(!pal||!ci) return; const v=ci.value.trim();
+    if(v.startsWith("/")&&!v.includes(" ")){ const q=v.slice(1).toLowerCase(); const items=SLASH.filter(s=>s.c.slice(1).startsWith(q));
+      pal.innerHTML=items.map(s=>`<div class="p" data-cmd="${s.c}" data-arg="${s.arg?1:0}"><span class="c">${s.c}</span><span class="d">${s.d}</span></div>`).join("");
+      pal.querySelectorAll("[data-cmd]").forEach(el=>el.onclick=()=>{ const c=el.dataset.cmd; if(el.dataset.arg==="1"){ ci.value=c+" "; ci.focus(); drawPal(); } else { sendCmdAck({kind:"send",contextId:S.ctxId,text:c},"Sent to your Mac…"); ci.value=""; pal.innerHTML=""; } });
+    } else pal.innerHTML=""; };
+  if(ci) ci.addEventListener("input",drawPal);
+  const pr=Object.values(pending).find(p=>p.contextId===S.ctxId);
+  if(pr){
+    document.querySelectorAll("[data-allow]").forEach(b=>b.onclick=()=>{ sendCmdAck({kind:"respond",contextId:S.ctxId,id:pr.id,behavior:"allow"}); delete pending[pr.id]; render(); });
+    document.querySelectorAll("[data-deny]").forEach(b=>b.onclick=()=>{ sendCmdAck({kind:"respond",contextId:S.ctxId,id:pr.id,behavior:"deny"}); delete pending[pr.id]; render(); });
+    document.querySelectorAll("[data-aq]").forEach(b=>b.onclick=()=>{ const qs=(pr.input&&pr.input.questions)||[]; const q=qs[+b.dataset.aq]; const o=q.options[+b.dataset.oi];
+      pAns[pr.id]=pAns[pr.id]||{}; pAns[pr.id][q.question]=o.label;
+      if(qs.every(qq=>pAns[pr.id][qq.question])){ sendCmdAck({kind:"respond",contextId:S.ctxId,id:pr.id,behavior:"allow",updatedInput:{...pr.input,answers:pAns[pr.id]}}); delete pending[pr.id]; delete pAns[pr.id]; }
+      render(); });
+  }
+}
+
+/* ---------- contexts tab ---------- */
+function contextsView(){
+  const rows=S.contexts.map(r=>{const st=STATUS(r);return `<div class="lrow"><span class="col-open" data-open="${r.id}" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
+    <span style="width:24px;display:grid;place-items:center">${chipIcon(r)}</span>
+    <span style="min-width:0;flex:1"><span class="nm" style="display:block">${esc(r.name||"context")}${r.temporary?` <span style="color:var(--purple);font-size:11px">Merged</span>`:""}</span><span class="meta mono" style="display:block">${esc(r.branch||"")}</span></span>
+    <span class="st" style="font-size:12px;color:var(--sub)">${r.temporary?"":st.t}</span><span class="dot" style="background:${r.temporary?"var(--purple)":st.c};margin-left:6px"></span></span>
+    <button class="menu-btn" data-menu="${r.id}" data-name="${esc(r.name||"")}">⋯</button></div>`;}).join("");
+  return `<div class="hdr"><div class="brand">${M_SVG} Contexts</div><span class="pillbtn" id="newchat2"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 3.5v9M3.5 8h9"/></svg> New</span></div><div class="scroll">${rows||`<div class="empty">No contexts yet.</div>`}</div>`;
+}
+function contextsBind(){
+  document.querySelectorAll(".col-open").forEach(e=>e.onclick=()=>{S.ctxId=e.dataset.open;S.tab="chat";loadMessages();sendCmd({kind:"select",contextId:e.dataset.open});});
+  const nc=document.getElementById("newchat2"); if(nc) nc.onclick=()=>sendCmdAck({kind:"newContext"},"Creating a new chat…");
+  document.querySelectorAll("[data-menu]").forEach(b=>b.onclick=()=>{ const id=b.dataset.menu, nm=b.dataset.name;
+    const a=prompt(`Rename this chat (or type DELETE to remove it):`, nm);
+    if(a===null) return;
+    if(a.trim().toUpperCase()==="DELETE"){ if(confirm("Delete this chat? This can't be undone.")){ sendCmdAck({kind:"delete",contextId:id},"Deleting…"); } }
+    else if(a.trim() && a.trim()!==nm){ sendCmdAck({kind:"rename",contextId:id,name:a.trim()},"Renaming…"); }
+  });
+}
+
+/* ---------- activity tab ---------- */
+let actMsgs=[];
+function activityView(){
+  const rows=actMsgs.slice(0,60).map(m=>{const ctx=S.contexts.find(c=>c.id===m.context_id);const who=m.role==="you"?"You":(m.role==="bridge"?"Bridge":(ENG[m.cli]||ENG.claude).n);
+    return `<div class="lrow" data-open="${m.context_id}"><span style="width:22px;display:grid;place-items:center">${m.role==="you"?`<div class="av you" style="width:22px;height:22px;font-size:9px">${esc((S.email||"me").slice(0,2).toUpperCase())}</div>`:(m.role==="bridge"?M_SVG.replace(/22/g,"18"):(ENG[m.cli]||ENG.claude).g)}</span>
+    <div style="min-width:0;flex:1"><div class="nm" style="font-size:14px">${esc(who)} <span style="color:var(--faint);font-weight:400">· ${esc(ctx?.name||"")}</span></div><div class="meta" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((m.text||"(tool activity)").slice(0,80))}</div></div>
+    <span class="when">${ago(m.updated_at)}</span></div>`;}).join("");
+  return `<div class="hdr"><div class="brand">${M_SVG} Activity</div></div><div class="scroll">${rows||`<div class="empty">No activity yet.</div>`}</div>`;
+}
+async function loadActivity(){ const {data}=await sb.from("messages").select("*").order("updated_at",{ascending:false}).limit(60); actMsgs=data||[]; if(S.tab==="activity") render(); }
+
+/* ---------- settings tab ---------- */
+let macOnline=false;
+function settingsView(){
+  return `<div class="hdr"><div class="brand">${M_SVG} Settings</div></div><div class="scroll">
+    <div class="sectit">ACCOUNT</div><div class="card2"><div class="srow"><div><div style="font-size:14.5px;font-weight:600">Signed in</div><div style="font-size:12.5px;color:var(--sub)">${esc(S.email)}</div></div><button class="btn ghost" id="out">Sign out</button></div></div>
+    <div class="sectit">YOUR MAC</div><div class="card2"><div class="srow"><div><div style="font-size:14.5px;font-weight:600">Relay status</div><div style="font-size:12.5px;color:var(--sub)">${macOnline?"Online — doing the work":"Offline — open Bridge on your Mac"}</div></div><span class="dot" style="background:${macOnline?"var(--green)":"var(--faint)"}"></span></div></div>
+    <div class="sectit">ABOUT</div><div class="card2"><div class="srow"><div style="font-size:13px;color:var(--sub);line-height:1.5">Your Mac does the work; the phone sends prompts and approves actions. Risky actions still follow the context's permission mode on the Mac. Add to Home Screen for the full-screen app.</div></div></div>
+    </div>`;
+}
+function settingsBind(){ const o=document.getElementById("out"); if(o)o.onclick=()=>sb.auth.signOut(); }
+async function presence(){ const {data}=await sb.from("devices").select("*").eq("device","desktop").maybeSingle(); macOnline = !!(data&&data.online&&(Date.now()-new Date(data.last_seen).getTime()<70000)); if(S.tab==="settings")render(); }
+
+// keep activity + presence fresh
+setInterval(()=>{ if(S.view==="app"){ loadActivity(); presence(); } }, 20000);
+sb.channel("dev").on("postgres_changes",{event:"*",schema:"public",table:"devices"},presence).subscribe();
+const _enter=enter; enter=async()=>{ await _enter(); loadActivity(); presence(); };
+
+boot();
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>

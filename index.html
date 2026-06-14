@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bridge — Run AI agents. Keep contexts separate. Merge when it matters.</title>
+<meta name="description" content="Bridge runs Claude Code, Codex and Gemini in isolated contexts, then merges them temporarily so you ship better code, faster. Local, private, self-contained." />
+<style>
+  :root{
+    --ink:#18181b; --sub:#6b7280; --faint:#9ca3af; --line:#ededed; --line2:#e4e4e7;
+    --bg:#ffffff; --soft:#fafafa; --hover:#f4f4f5; --blue:#2563eb; --green:#16a34a;
+    --cc:#cc6b4f; --cx:#10a37f; --gm:#4285f4; --purple:#7c3aed;
+    --radius:16px; --maxw:1080px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Inter",-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.5}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  /* nav */
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:saturate(180%) blur(14px);
+    background:rgba(255,255,255,.72);border-bottom:1px solid var(--line)}
+  .navin{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:17px}
+  .brand img{height:20px}
+  .navlinks{display:flex;gap:28px;font-size:14px;color:var(--sub)}
+  .navlinks a:hover{color:var(--ink)}
+  .navbtns{display:flex;gap:10px;align-items:center}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:11px;font-size:14px;font-weight:500;
+    padding:9px 16px;border:1px solid var(--line2);background:#fff;cursor:pointer;transition:.15s}
+  .btn:hover{background:var(--hover)}
+  .btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.primary:hover{opacity:.9;background:var(--ink)}
+  @media(max-width:820px){.navlinks{display:none}}
+  /* hero */
+  .hero{text-align:center;padding:72px 0 40px;position:relative;overflow:hidden}
+  .hero::before{content:"";position:absolute;width:60vw;height:60vw;border-radius:50%;
+    background:radial-gradient(circle,rgba(52,214,230,.16),transparent 70%);top:-26vw;left:-10vw;filter:blur(40px);pointer-events:none}
+  .hero::after{content:"";position:absolute;width:55vw;height:55vw;border-radius:50%;
+    background:radial-gradient(circle,rgba(110,123,255,.14),transparent 70%);top:-22vw;right:-12vw;filter:blur(40px);pointer-events:none}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--sub);
+    border:1px solid var(--line2);background:#fff;border-radius:999px;padding:5px 12px;position:relative}
+  .pill b{background:var(--hover);border-radius:999px;padding:2px 8px;font-weight:600;color:var(--ink);font-size:12px}
+  h1{font-size:60px;line-height:1.04;letter-spacing:-.03em;font-weight:600;margin:26px auto 0;max-width:780px}
+  .sub{margin:22px auto 0;max-width:560px;color:var(--sub);font-size:17px}
+  .cta{display:flex;gap:12px;justify-content:center;margin-top:30px;flex-wrap:wrap}
+  .btn.lg{padding:13px 22px;font-size:15px;border-radius:13px}
+  .chips{display:flex;gap:26px;justify-content:center;margin-top:26px;flex-wrap:wrap;color:var(--sub);font-size:13.5px}
+  .chips span{display:inline-flex;align-items:center;gap:8px}
+  .chips svg{opacity:.7}
+  @media(max-width:680px){h1{font-size:38px}}
+  /* app preview */
+  .preview{margin:36px auto 0;max-width:1000px;border:1px solid var(--line2);border-radius:20px;overflow:hidden;
+    box-shadow:0 30px 80px -30px rgba(20,20,45,.28);background:#fff}
+  .pv-grid{display:grid;grid-template-columns:210px 1fr 220px;min-height:440px}
+  .pv-side{background:var(--soft);border-right:1px solid var(--line);padding:14px}
+  .pv-side .new{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line2);border-radius:10px;padding:8px 10px;font-size:12.5px;color:var(--sub);background:#fff}
+  .pv-side .lbl{font-size:10.5px;letter-spacing:.08em;color:var(--faint);margin:16px 0 8px}
+  .ctx{display:flex;align-items:center;gap:9px;padding:8px;border-radius:9px;margin-bottom:4px}
+  .ctx.sel{background:var(--hover)}
+  .ctx .ico{width:22px;height:22px;border-radius:6px;background:#fff;border:1px solid var(--line2);display:grid;place-items:center;font-size:11px}
+  .ctx .nm{font-size:12.5px;font-weight:500}
+  .ctx .br{font-size:11px;color:var(--faint);font-family:ui-monospace,monospace}
+  .ctx .st{margin-left:auto;font-size:10.5px}
+  .pv-main{padding:18px 20px;display:flex;flex-direction:column}
+  .pv-h{display:flex;align-items:center;justify-content:space-between}
+  .pv-h .t{font-size:17px;font-weight:600}
+  .modelpill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:9px;padding:5px 10px;font-size:12.5px}
+  .feed{margin-top:14px;display:flex;flex-direction:column;gap:16px;flex:1}
+  .msg{display:flex;gap:10px}
+  .av{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:11px;font-weight:600}
+  .av.you{background:var(--ink);color:#fff}
+  .msg .who{font-size:13px;font-weight:600}
+  .msg .tx{font-size:12.5px;color:#3f3f46;margin-top:2px}
+  .tool{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub);margin-top:5px;font-family:ui-monospace,monospace}
+  .tool .ok{color:var(--green)}
+  .composer{border:1px solid var(--line2);border-radius:13px;padding:11px 12px;color:var(--faint);font-size:13px;display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+  .send{width:28px;height:28px;border-radius:8px;background:var(--ink);color:#fff;display:grid;place-items:center}
+  .pv-merge{background:var(--soft);border-left:1px solid var(--line);padding:16px}
+  .pv-merge h4{margin:0;font-size:13.5px}
+  .pv-merge p{font-size:12px;color:var(--sub);margin:6px 0 14px}
+  .drop{border:1px dashed var(--line2);border-radius:11px;padding:22px;text-align:center;color:var(--faint);font-size:12px;background:#fff}
+  @media(max-width:860px){.pv-grid{grid-template-columns:1fr}.pv-side,.pv-merge{display:none}}
+  /* features row */
+  .frow{display:grid;grid-template-columns:repeat(4,1fr);gap:28px;padding:64px 0 8px}
+  .frow .ic{width:30px;height:30px;color:var(--ink);opacity:.85}
+  .frow h3{font-size:15px;margin:14px 0 6px}
+  .frow p{font-size:13.5px;color:var(--sub);margin:0}
+  @media(max-width:860px){.frow{grid-template-columns:1fr 1fr;gap:24px}}
+  @media(max-width:560px){.frow{grid-template-columns:1fr}}
+  /* works with */
+  .works{text-align:center;padding:54px 0}
+  .works .cap{font-size:11.5px;letter-spacing:.12em;color:var(--faint);margin-bottom:22px}
+  .works .row{display:flex;gap:40px;justify-content:center;align-items:center;flex-wrap:wrap;font-weight:600;color:#52525b;font-size:18px}
+  .works .row span{display:inline-flex;align-items:center;gap:9px}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+  /* install */
+  .install{background:var(--soft);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:72px 0;text-align:center}
+  .install h2{font-size:34px;letter-spacing:-.02em;margin:0 0 10px;font-weight:600}
+  .install p{color:var(--sub);margin:0 auto 28px;max-width:480px}
+  .cmd{display:flex;align-items:center;gap:12px;max-width:620px;margin:0 auto;background:#0e0e12;border-radius:13px;
+    padding:14px 16px;color:#e4e4e7;font-family:ui-monospace,monospace;font-size:13.5px;text-align:left}
+  .cmd code{flex:1;overflow-x:auto;white-space:nowrap}
+  .cmd .prompt{color:#71717a}
+  .copy{flex:none;background:#26262b;color:#e4e4e7;border:none;border-radius:8px;padding:7px 12px;font-size:12.5px;cursor:pointer;font-family:inherit}
+  .copy:hover{background:#34343a}
+  .install .alt{margin-top:18px;font-size:13.5px}
+  .install .alt a{color:var(--blue);font-weight:500}
+  .req{margin-top:14px;font-size:12px;color:var(--faint)}
+  .reqbox{max-width:620px;margin:18px auto 0;text-align:left;border:1px solid var(--line2);background:#fff;border-radius:13px;padding:16px 18px;font-size:13px;color:var(--sub)}
+  .reqh{font-weight:600;color:var(--ink);margin-bottom:6px;font-size:13.5px}
+  .reqbox ol{margin:10px 0 0;padding-left:20px}
+  .reqbox li{margin:8px 0}
+  .mono2{display:inline-block;margin-top:4px;background:#0e0e12;color:#e4e4e7;border-radius:7px;padding:5px 9px;font-family:ui-monospace,monospace;font-size:12px}
+  /* feature detail */
+  .everything{padding:80px 0}
+  .everything .head{text-align:center;margin-bottom:48px}
+  .everything h2{font-size:30px;letter-spacing:-.02em;margin:0 0 8px;font-weight:600}
+  .everything .head p{color:var(--sub);margin:0}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .card{border:1px solid var(--line);border-radius:var(--radius);padding:22px;background:#fff}
+  .card .ic{width:34px;height:34px;border-radius:9px;background:var(--hover);display:grid;place-items:center;margin-bottom:14px}
+  .card h3{font-size:15px;margin:0 0 6px}
+  .card p{font-size:13.5px;color:var(--sub);margin:0}
+  @media(max-width:860px){.grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.grid{grid-template-columns:1fr}}
+  /* footer */
+  footer{border-top:1px solid var(--line);padding:40px 0;color:var(--faint);font-size:13px}
+  .footin{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+  .footin .brand{font-size:15px;color:var(--ink)}
+</style>
+</head>
+<body>
+<nav>
+  <div class="wrap navin">
+    <a class="brand" href="#top"><img src="bridge_logo.png" alt="Bridge" /> Bridge</a>
+    <div class="navlinks">
+      <a href="#features">Product</a><a href="#features">Features</a>
+      <a href="#install">Pricing</a><a href="https://github.com/AkshobyaRaoSWE/bridge" target="_blank">Docs</a>
+      <a href="https://github.com/AkshobyaRaoSWE/bridge" target="_blank">GitHub</a>
+    </div>
+    <div class="navbtns">
+      <a class="btn" href="https://github.com/AkshobyaRaoSWE/bridge" target="_blank">GitHub</a>
+      <a class="btn primary" href="#install">Get started</a>
+    </div>
+  </div>
+</nav>
+
+<header id="top" class="hero">
+  <div class="wrap">
+    <span class="pill"><b>New</b> Codex &amp; Gemini, now in Bridge →</span>
+    <h1>Run AI agents.<br/>Keep contexts separate.<br/>Merge when it matters.</h1>
+    <p class="sub">Bridge runs Claude Code, Codex and Gemini in isolated contexts, then merges them temporarily so you ship better code, faster.</p>
+    <div class="cta">
+      <a class="btn primary lg" href="#install">Install for macOS →</a>
+      <a class="btn lg" href="https://github.com/AkshobyaRaoSWE/bridge" target="_blank">View on GitHub</a>
+    </div>
+    <div class="chips">
+      <span>🛡️ Isolated by default</span>
+      <span>🔀 Merge contexts temporarily</span>
+      <span>🔒 Local &amp; private</span>
+    </div>
+  </div>
+
+  <!-- app preview -->
+  <div class="wrap">
+  <div class="preview" aria-hidden="true">
+    <div class="pv-grid">
+      <aside class="pv-side">
+        <div class="brand" style="margin-bottom:14px"><img src="bridge_logo.png" style="height:18px" alt=""/> <span style="font-weight:600;font-size:15px">Bridge</span></div>
+        <div class="new">+ New context <span style="font-family:ui-monospace,monospace">⌘N</span></div>
+        <div class="lbl">CONTEXTS</div>
+        <div class="ctx sel"><span class="ico">⚑</span><div><div class="nm">checkout-flow</div><div class="br">bridge/checkout-flow</div></div><span class="st" style="color:var(--green)">●</span></div>
+        <div class="ctx"><span class="ico">↻</span><div><div class="nm">auth-refactor</div><div class="br">bridge/auth-refactor</div></div><span class="st" style="color:var(--green)">●</span></div>
+        <div class="ctx"><span class="ico">▦</span><div><div class="nm">billing-ui</div><div class="br">bridge/billing-ui</div></div><span class="st" style="color:var(--purple);font-size:10px">Review</span></div>
+        <div class="ctx"><span class="ico">✎</span><div><div class="nm">docs-refresh</div><div class="br">bridge/docs-refresh</div></div><span class="st" style="color:var(--faint);font-size:10px">Idle</span></div>
+      </aside>
+      <section class="pv-main">
+        <div class="pv-h">
+          <div class="t">checkout-flow</div>
+          <span class="modelpill"><span style="color:var(--cc)">✳</span> Sonnet 4.6 ▾</span>
+        </div>
+        <div class="feed">
+          <div class="msg"><div class="av you">AS</div><div><div class="who">You</div><div class="tx">Refactor checkout state handling and add tests.</div></div></div>
+          <div class="msg"><div class="av" style="color:var(--cc);font-size:16px">✳</div><div><div class="who">Claude Code</div><div class="tx">Created isolated workspace. Inspecting files…</div>
+            <div class="tool"><span class="ok">✓</span> Read src/checkout/store.ts</div>
+            <div class="tool"><span class="ok">✓</span> Update src/checkout/store.ts</div>
+            <div class="tool">◌ Run pnpm test</div></div></div>
+          <div class="msg"><div class="av" style="color:var(--cx);font-size:15px">◎</div><div><div class="who">Codex</div><div class="tx">Adding tests for checkout store.</div>
+            <div class="tool"><span class="ok">✓</span> Create tests/checkout/store.test.ts</div></div></div>
+        </div>
+        <div class="composer">Ask Bridge, or type / for commands <span class="send">↑</span></div>
+      </section>
+      <aside class="pv-merge">
+        <h4>Merge contexts</h4>
+        <p>Select contexts in the sidebar, then merge them into a new temporary chat.</p>
+        <div class="drop">Pick contexts to merge</div>
+      </aside>
+    </div>
+  </div>
+  </div>
+</header>
+
+<!-- feature row -->
+<section class="wrap frow" id="features">
+  <div><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 2.5v6c0 4.7-3.3 7.7-8 9.3-4.7-1.6-8-4.6-8-9.3v-6z"/></svg>
+    <h3>Isolated by default</h3><p>Every agent gets its own context, working folder and session. No cross-contamination.</p></div>
+  <div><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+    <h3>Merge temporarily</h3><p>Combine contexts on demand into a scratch chat to compare approaches and ship the best result. Originals stay untouched.</p></div>
+  <div><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="4.5" width="17" height="13" rx="2"/><path d="M8 20h8M12 17.5V20"/></svg>
+    <h3>Three engines, one UI</h3><p>Claude Code, Codex and Gemini, with the same streaming, approvals and slash commands. Switch per context.</p></div>
+  <div><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="10.5" width="14" height="9" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
+    <h3>Your data stays yours</h3><p>Runs locally on your machine. No Bridge servers, no telemetry, no training on your code.</p></div>
+</section>
+
+<!-- works with -->
+<section class="works">
+  <div class="cap">WORKS WITH THE AGENTS YOU ALREADY USE</div>
+  <div class="row">
+    <span><i class="dot" style="background:var(--cc)"></i> Claude Code</span>
+    <span><i class="dot" style="background:var(--cx)"></i> Codex</span>
+    <span><i class="dot" style="background:var(--gm)"></i> Gemini</span>
+  </div>
+</section>
+
+<!-- install -->
+<section class="install" id="install">
+  <div class="wrap">
+    <h2>Install Bridge</h2>
+    <p>One command. No account, no sign-up. macOS (Apple Silicon).</p>
+    <div class="cmd">
+      <span class="prompt">$</span>
+      <code id="cmd">curl -fsSL https://github.com/AkshobyaRaoSWE/bridge/releases/latest/download/install.sh | bash</code>
+      <button class="copy" id="copy">Copy</button>
+    </div>
+    <div class="alt">or <a href="https://github.com/AkshobyaRaoSWE/bridge/releases/latest/download/Bridge.app.tar.gz">download the app</a> &middot; <a href="https://github.com/AkshobyaRaoSWE/bridge/releases" target="_blank">all releases</a></div>
+    <div class="req"><b>Use the command above</b> — it installs and opens with no security prompt. Self-contained (bundles its own runtime); auto-updates after first launch.</div>
+    <div class="reqbox">
+      <div class="reqh">Downloaded with a browser instead?</div>
+      macOS will block it once with "can't verify… free of malware." On recent macOS, right-click → Open no longer works. Do one of these:
+      <ol>
+        <li>Move <b>Bridge</b> to your <b>Applications</b> folder, then run:<br/>
+          <code class="mono2">xattr -dr com.apple.quarantine /Applications/Bridge.app</code><br/>and open it. <span style="color:var(--faint)">(easiest, always works)</span></li>
+        <li>Or: double-click Bridge → click <b>Done</b> → open <b>System Settings → Privacy &amp; Security</b> → scroll down → click <b>Open Anyway</b> next to Bridge → confirm.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- everything -->
+<section class="everything wrap">
+  <div class="head">
+    <h2>Everything you need to build with AI agents</h2>
+    <p>Powerful features to ship better software with confidence.</p>
+  </div>
+  <div class="grid">
+    <div class="card"><div class="ic">⚑</div><h3>Parallel contexts</h3><p>Run many agents at once, each in its own isolated chat, folder and branch.</p></div>
+    <div class="card"><div class="ic">🔀</div><h3>Temporary merges</h3><p>Fuse contexts (even across engines) into a throwaway chat that carries the combined work.</p></div>
+    <div class="card"><div class="ic">✋</div><h3>Interactive approvals</h3><p>Approve or deny every file edit and command, with arrow-key option prompts — for all three engines.</p></div>
+    <div class="card"><div class="ic">/</div><h3>Slash commands</h3><p>Bridge commands plus each engine's own commands, in a fast arrow-key palette.</p></div>
+    <div class="card"><div class="ic">◐</div><h3>Light &amp; dark</h3><p>A clean dashboard with a real dark theme and a distraction-free focus mode.</p></div>
+    <div class="card"><div class="ic">↻</div><h3>Auto-updates</h3><p>Signed, in-app updates for Bridge and one-click updates for every engine.</p></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footin">
+    <a class="brand" href="#top"><img src="bridge_logo.png" style="height:18px;vertical-align:middle;margin-right:8px" alt=""/>Bridge</a>
+    <div>Runs locally · Claude Code, Codex &amp; Gemini</div>
+    <a href="https://github.com/AkshobyaRaoSWE/bridge" target="_blank">GitHub →</a>
+  </div>
+</footer>
+
+<script>
+  const c = document.getElementById('copy');
+  c.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(document.getElementById('cmd').textContent.trim());
+      c.textContent = 'Copied'; setTimeout(()=>c.textContent='Copy', 1400); } catch {}
+  });
+</script>
+</body>
+</html>
